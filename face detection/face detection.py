@@ -11,7 +11,27 @@ count = 0
 
 face_match = False
 
-img = cv2.imread("face detection\Faces\Mohamed Mostafa.png") # load the image
+#img = cv2.imread("face detection\Faces\Mohamed Mostafa.png") # load the image
+img = cv2.imread(r'C:\Users\mirol\Documents\GitHub\computer-vision-section\face detection\Faces\Mohamed Mostafa.png') # load the image
+
+Cascade =cv2.CascadeClassifier('haar_face.xml')
+people=['Bill Gates','Dara Khosrowshani','Mark Zuckerberg','Sudan Pichai']
+face_recognizer= cv2.face.LBPHFaceRecognizer_create()
+face_recognizer.read('face_trained.yml')
+
+def detect_and_recognize_faces(img, gray, faces_rect, face_recognizer, people):
+    face_found = False
+
+    for (x, y, w, h) in faces_rect:
+        face_found = True
+        faces_roi = gray[y:y+h, x:x+w]
+        label, confidence_level = face_recognizer.predict(faces_roi)
+        print(f'label={people[label]}:{confidence_level}')
+        cv.putText(img, str(people[label]), (x-20, y-5), cv.FONT_HERSHEY_COMPLEX, 0.8, (255, 255, 255), thickness=2)
+        cv.rectangle(img, (x, y), (x+w, y+h), (100, 0, 255), thickness=3)
+
+    return face_found
+
 
 def check_face(frame):
     global face_match
