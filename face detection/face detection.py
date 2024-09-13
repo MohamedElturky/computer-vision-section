@@ -1,75 +1,76 @@
 import cv2
-import threading
-from deepface import DeepFace
+import numpy as np
+import face_recognition
+import os
 
-# setting the camera
-cap = cv2.VideoCapture(0)
-cap.set(cv2.CAP_PROP_FRAME_WIDTH, 640)
-cap.set(cv2.CAP_PROP_FRAME_HEIGHT, 480)
+# Define constants
+FAMILY_FOLDER = "face detection/Faces"
+TOLERANCE = 0.6
 
-count = 0
+# Load known face encodings and names
+known_face_encodings = []
+known_face_names = []
 
-face_match = False
+for filename in os.listdir(FAMILY_FOLDER):
+    if filename.endswith(".jpg") or filename.endswith(".png"):
+        family_image = face_recognition.load_image_file(os.path.join(FAMILY_FOLDER, filename))
+        family_encoding = face_recognition.face_encodings(family_image)[0]
+        known_face_encodings.append(family_encoding)
+        known_face_names.append(os.path.splitext(filename)[0])
 
-#img = cv2.imread("face detection\Faces\Mohamed Mostafa.png") # load the image
-img = cv2.imread(r'C:\Users\mirol\Documents\GitHub\computer-vision-section\face detection\Faces\Mohamed Mostafa.png') # load the image
+# Initialize face detection cascade classifier
+face_detect = cv2.CascadeClassifier("myvenv\Lib\site-packages\cv2\data\haarcascade_frontalface_default.xml")
 
-Cascade =cv2.CascadeClassifier('haar_face.xml')
-people=['Bill Gates','Dara Khosrowshani','Mark Zuckerberg','Sudan Pichai']
-face_recognizer= cv2.face.LBPHFaceRecognizer_create()
-face_recognizer.read('face_trained.yml')
-
-def detect_and_recognize_faces(img, gray, faces_rect, face_recognizer, people):
-    face_found = False
-
-    for (x, y, w, h) in faces_rect:
-        face_found = True
-        faces_roi = gray[y:y+h, x:x+w]
-        label, confidence_level = face_recognizer.predict(faces_roi)
-        print(f'label={people[label]}:{confidence_level}')
-        cv.putText(img, str(people[label]), (x-20, y-5), cv.FONT_HERSHEY_COMPLEX, 0.8, (255, 255, 255), thickness=2)
-        cv.rectangle(img, (x, y), (x+w, y+h), (100, 0, 255), thickness=3)
-
-    return face_found
-
-
-def check_face(frame):
-    global face_match
-
-    try:
-        if DeepFace.verify(frame, img.copy())['verified']:
-            face_match = True
-        else:
-            face_match = False
-    except ValueError:
-        face_match = False
+# Initialize video capture
+vid = cv2.VideoCapture(0)
 
 while True:
-    ret, frame = cap.read()
-
-    if ret:
-        if count % 30 == 0: #check every 30 frams
-            try:
-                threading.Thread(target = check_face, args = (frame,)).start()
-
-            except ValueError:
-                pass
-
-        count += 1
-
-        if face_match:
-            cv2.putText(frame, "Face Matched", (20, 450), cv2.FONT_HERSHEY_COMPLEX, 2, (0, 255, 0), 3)
-        else:
-            cv2.putText(frame, "No Face Matched", (20, 450), cv2.FONT_HERSHEY_COMPLEX, 2, (0, 0, 255), 3)
-
-        cv2.imshow("video", frame)
-
-
-    key =  cv2.waitKey(1)
-    if key == ord('q'):
+    ret, frame = vid.read()
+    if not ret:
         break
 
-cap.release()
+    # Detect faces in the frame
+    faces = face_detect.detectMultiScale(frame, 1.3, 5)
+
+    for (x, y, w, h) in faces:
+        # Extract face ROI
+        face_only = frame[y:y + h, x:x + w]
+
+        # Convert face ROI to RGB
+        rgb_face = cv2.cvtColor(face_only, cv2.COLOR_BGR2RGB)
+
+        # Get face encoding
+        face_encodings = face_recognition.face_encodings(rgb_face)
+
+        if face_encodings:
+            face_encoding = face_encodings[0]
+
+            # Compare face encoding with known face encodings
+            matches = face_recognition.compare_faces(known_face_encodings, face_encoding, tolerance=TOLERANCE)
+            face_distances = face_recognition.face_distance(known_face_encodings, face_encoding)
+            best_match_index = np.argmin(face_distances)
+
+            if matches[best_match_index]:
+                name = known_face_names[best_match_index]
+                # Draw rectangle around the face with the recognized name
+                cv2.rectangle(frame, (x, y), (x + w, y + h), (0, 255, 0), 2)
+                cv2.putText(frame, name, (x, y - 10), cv2.FONT_HERSHEY_SIMPLEX, 0.8, (0, 255, 0), 2)
+
+            else:
+                name = "No match"
+                # Draw rectangle around the face with the recognized name
+                cv2.rectangle(frame, (x, y), (x + w, y + h), (0, 0, 255), 2)
+                cv2.putText(frame, name, (x, y - 10), cv2.FONT_HERSHEY_SIMPLEX, 0.8, (0, 0, 255), 2)
+            
+
+    # Resize the frame and add borders
+    frame = cv2.resize(frame, (1000, 800))
+
+    # Display the output
+    cv2.imshow("Smart home camera", frame)
+
+    if cv2.waitKey(1) & 0xFF == ord('q'):
+        break
+
+vid.release()
 cv2.destroyAllWindows()
-
-
