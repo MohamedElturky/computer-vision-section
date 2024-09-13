@@ -2,9 +2,19 @@ import cv2
 import numpy as np
 import face_recognition
 import os
+import serial
+import time
+
+ser = serial.Serial('COM3', 9600)
+time.sleep(2)
+
+
+
 
 # Define constants
-FAMILY_FOLDER = "face detection\Faces"
+#FAMILY_FOLDER = "face detection\Faces"
+FAMILY_FOLDER = r'C:\Users\mirol\Documents\GitHub\computer-vision-section\face detection\Faces'
+
 TOLERANCE = 0.6
 
 # Load known face encodings and names
@@ -19,12 +29,14 @@ for filename in os.listdir(FAMILY_FOLDER):
         known_face_names.append(os.path.splitext(filename)[0])
 
 # Initialize face detection cascade classifier
-face_detect = cv2.CascadeClassifier("myvenv\Lib\site-packages\cv2\data\haarcascade_frontalface_default.xml")
+#face_detect = cv2.CascadeClassifier("myvenv\Lib\site-packages\cv2\data\haarcascade_frontalface_default.xml")
+face_detect = cv2.CascadeClassifier(r'C:\Users\mirol\Documents\GitHub\computer-vision-section\haarcascade_frontalface_default.xml')
 
 # Initialize video capture
 vid = cv2.VideoCapture(0)
 
 while True:
+
     ret, frame = vid.read()
     if not ret:
         break
@@ -61,6 +73,32 @@ while True:
                 # Draw rectangle around the face with the recognized name
                 cv2.rectangle(frame, (x, y), (x + w, y + h), (0, 0, 255), 2)
                 cv2.putText(frame, name, (x, y - 10), cv2.FONT_HERSHEY_SIMPLEX, 0.8, (0, 0, 255), 2)
+
+
+
+    # Read data from ATmega
+    if ser.in_waiting > 0:
+        line = ser.readline().decode('utf-8').rstrip()
+        print("From ATmega: ", line)
+        if line=="save":  #save a new owner
+            person_name = input("Enter the name of the person: ")
+            image_path = os.path.join(FAMILY_FOLDER, f"{person_name}.jpg")
+            cv2.imwrite(image_path, frame)
+            print(f"Captured and saved!")
+        elif line=="Change password": #change password
+            new_password= input("Enter the new password: ")
+            ser.write(f"{new_password}\n".encode())
+        elif line=="Delete":  #delete owner
+            name_to_delete= input("Enter the owner to remove: ")
+            folder_path= r'C:\Users\mirol\Documents\GitHub\computer-vision-section\face detection\Faces'
+            picture_path= rf'{name_to_delete}.jpg'
+            file_path = os.path.join(folder_path, picture_name)
+            if os.path.exists(file_path):
+                os.remove(file_path)
+                print(f"{picture_name} has been deleted.")
+            
+            else:
+                print(f"The file {picture_name} does not exist.")
             
 
     # Resize the frame and add borders
@@ -75,7 +113,7 @@ while True:
         person_name = input("Enter the name of the person: ")
         image_path = os.path.join(FAMILY_FOLDER, f"{person_name}.jpg")
         cv2.imwrite(image_path, frame)
-        print(f"Captured ans saved!")
+        print(f"Captured and saved!")
 
 
 
