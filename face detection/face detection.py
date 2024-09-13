@@ -4,7 +4,7 @@ import face_recognition
 import os
 
 # Define constants
-FAMILY_FOLDER = "face detection/Faces"
+FAMILY_FOLDER = "face detection\Faces"
 TOLERANCE = 0.6
 
 # Load known face encodings and names
@@ -71,6 +71,14 @@ while True:
 
     if cv2.waitKey(1) & 0xFF == ord('q'):
         break
+    elif cv2.waitKey(1) & 0xFF == ord('s'):
+        person_name = input("Enter the name of the person: ")
+        image_path = os.path.join(FAMILY_FOLDER, f"{person_name}.jpg")
+        cv2.imwrite(image_path, frame)
+        print(f"Captured ans saved!")
+
+
+
 
 vid.release()
 cv2.destroyAllWindows()
