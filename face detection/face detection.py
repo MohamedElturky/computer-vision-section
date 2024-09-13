@@ -31,6 +31,7 @@ for filename in os.listdir(FAMILY_FOLDER):
 # Initialize face detection cascade classifier
 #face_detect = cv2.CascadeClassifier("myvenv\Lib\site-packages\cv2\data\haarcascade_frontalface_default.xml")
 face_detect = cv2.CascadeClassifier(r'C:\Users\mirol\Documents\GitHub\computer-vision-section\haarcascade_frontalface_default.xml')
+ser = serial.Serial('COM3',9600)
 
 # Initialize video capture
 vid = cv2.VideoCapture(0)
@@ -67,13 +68,16 @@ while True:
                 # Draw rectangle around the face with the recognized name
                 cv2.rectangle(frame, (x, y), (x + w, y + h), (0, 255, 0), 2)
                 cv2.putText(frame, name, (x, y - 10), cv2.FONT_HERSHEY_SIMPLEX, 0.8, (0, 255, 0), 2)
+                #send true to arduino
+                ser.write(b'True\n')
 
             else:
                 name = "No match"
                 # Draw rectangle around the face with the recognized name
                 cv2.rectangle(frame, (x, y), (x + w, y + h), (0, 0, 255), 2)
                 cv2.putText(frame, name, (x, y - 10), cv2.FONT_HERSHEY_SIMPLEX, 0.8, (0, 0, 255), 2)
-
+                #send false to arduino
+                ser.write(b'False\n')
 
 
     # Read data from ATmega
@@ -89,9 +93,10 @@ while True:
             new_password= input("Enter the new password: ")
             ser.write(f"{new_password}\n".encode())
         elif line=="Delete":  #delete owner
-            name_to_delete= input("Enter the owner to remove: ")
+            picture_name= input("Enter the owner to remove: ")
+            #folder_path= r'face detection\Faces'
             folder_path= r'C:\Users\mirol\Documents\GitHub\computer-vision-section\face detection\Faces'
-            picture_path= rf'{name_to_delete}.jpg'
+            picture_path= rf'{picture_name}.jpg'
             file_path = os.path.join(folder_path, picture_name)
             if os.path.exists(file_path):
                 os.remove(file_path)
@@ -120,3 +125,4 @@ while True:
 
 vid.release()
 cv2.destroyAllWindows()
+ser.close()
