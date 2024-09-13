@@ -5,12 +5,6 @@ import os
 import serial
 import time
 
-ser = serial.Serial('COM3', 9600)
-time.sleep(2)
-
-
-
-
 # Define constants
 #FAMILY_FOLDER = "face detection\Faces"
 FAMILY_FOLDER = r'C:\Users\mirol\Documents\GitHub\computer-vision-section\face detection\Faces'
