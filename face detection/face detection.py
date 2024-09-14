@@ -5,6 +5,16 @@ import os
 import serial
 import time
 
+
+password_file_path = os.path.join('D:\Programing/face detection', 'password.txt')
+
+try:
+    with open(password_file_path, 'r') as f:
+        password = f.read().strip()
+except FileNotFoundError:
+    with open(password_file_path, 'w') as f:
+        f.write('1234')
+
 # Define constants
 FAMILY_FOLDER = "face detection\Faces"
 #FAMILY_FOLDER = r'C:\Users\mirol\Documents\GitHub\computer-vision-section\face detection\Faces'
@@ -25,7 +35,7 @@ for filename in os.listdir(FAMILY_FOLDER):
 # Initialize face detection cascade classifier
 face_detect = cv2.CascadeClassifier("myvenv\Lib\site-packages\cv2\data\haarcascade_frontalface_default.xml")
 #face_detect = cv2.CascadeClassifier(r'C:\Users\mirol\Documents\GitHub\computer-vision-section\haarcascade_frontalface_default.xml')
-ser = serial.Serial('COM3',9600)
+ser = serial.Serial('COM5',9600)
 
 # Initialize video capture
 vid = cv2.VideoCapture(0)
@@ -65,6 +75,14 @@ while True:
                 #send true to arduino
                 ser.write(bytes('1','utf-8'))
 
+                print("Enter (p) to change the password")
+                
+                if cv2.waitKey(1) & 0xFF == ord('p'):  # change password
+                    new_password = input("Enter the new password: ")
+                    with open(password_file_path, 'w') as f:
+                        f.write(new_password)
+                    password = new_password
+
             else:
                 name = "No match"
                 # Draw rectangle around the face with the recognized name
@@ -72,35 +90,29 @@ while True:
                 cv2.putText(frame, name, (x, y - 10), cv2.FONT_HERSHEY_SIMPLEX, 0.8, (0, 0, 255), 2)
                 #send false to arduino
                 ser.write(bytes('0','utf-8'))
+                ser.write(bytes(f"{password}\n",'utf-8'))
 
+                print("Enter (s) to save image or (d) to delete from databae or (q) to quit: ")
 
-    # Read data from ATmega
-    if ser.in_waiting > 0:
-        line = ser.readline().decode('utf-8').rstrip()
-        print("From ATmega: ", line)
-        if line=="s":  #save a new owner
-            person_name = input("Enter the name of the person: ")
-            image_path = os.path.join(FAMILY_FOLDER, f"{person_name}.jpg")
-            cv2.imwrite(image_path, frame)
-            print(f"Captured and saved!")
+                if cv2.waitKey(1) & 0xFF == ord('s'):  #save a new owner
+                    person_name = input("Enter the name of the person: ")
+                    image_path = os.path.join(FAMILY_FOLDER, f"{person_name}.jpg")
+                    cv2.imwrite(image_path, frame)
+                    print(f"Captured and saved!")
 
-        elif line=="p": #change password
-            new_password= input("Enter the new password: ")
-            ser.write(bytes(f"{new_password}\n",'utf-8'))
-
-        elif line=="d":  #delete owner
-            picture_name= input("Enter the owner to remove: ")
-            folder_path= r'face detection\Faces'
-            #folder_path= r'C:\Users\mirol\Documents\GitHub\computer-vision-section\face detection\Faces'
-            picture_path= rf'{picture_name}.jpg'
-            file_path = os.path.join(folder_path, picture_name)
-            
-            if os.path.exists(file_path):
-                os.remove(file_path)
-                print(f"{picture_name} has been deleted.")
-            
-            else:
-                print(f"The file {picture_name} does not exist.")
+                elif cv2.waitKey(1) & 0xFF == ord('d'):  #delete owner
+                    picture_name= input("Enter the owner to remove: ")
+                    folder_path= r'face detection\Faces'
+                    #folder_path= r'C:\Users\mirol\Documents\GitHub\computer-vision-section\face detection\Faces'
+                    picture_path= rf'{picture_name}.jpg'
+                    file_path = os.path.join(folder_path, picture_name)
+                        
+                    if os.path.exists(file_path):
+                        os.remove(file_path)
+                        print(f"{picture_name} has been deleted.")
+                        
+                    else:
+                        print(f"The file {picture_name} does not exist.")
             
 
     # Resize the frame and add borders
@@ -111,11 +123,6 @@ while True:
 
     if cv2.waitKey(1) & 0xFF == ord('q'):
         break
-    elif cv2.waitKey(1) & 0xFF == ord('s'):
-        person_name = input("Enter the name of the person: ")
-        image_path = os.path.join(FAMILY_FOLDER, f"{person_name}.jpg")
-        cv2.imwrite(image_path, frame)
-        print(f"Captured and saved!")
 
 
 vid.release()
