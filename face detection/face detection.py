@@ -3,17 +3,6 @@ import numpy as np
 import face_recognition
 import os
 import serial
-import time
-
-
-password_file_path = os.path.join('D:\Programing/face detection', 'password.txt')
-
-try:
-    with open(password_file_path, 'r') as f:
-        password = f.read().strip()
-except FileNotFoundError:
-    with open(password_file_path, 'w') as f:
-        f.write('1234')
 
 # Define constants
 FAMILY_FOLDER = "face detection\Faces"
@@ -77,11 +66,6 @@ while True:
 
                 print("Enter (p) to change the password")
                 
-                if cv2.waitKey(1) & 0xFF == ord('p'):  # change password
-                    new_password = input("Enter the new password: ")
-                    with open(password_file_path, 'w') as f:
-                        f.write(new_password)
-                    password = new_password
 
             else:
                 name = "No match"
@@ -90,7 +74,6 @@ while True:
                 cv2.putText(frame, name, (x, y - 10), cv2.FONT_HERSHEY_SIMPLEX, 0.8, (0, 0, 255), 2)
                 #send false to arduino
                 ser.write(bytes('0','utf-8'))
-                ser.write(bytes(f"{password}\n",'utf-8'))
 
                 print("Enter (s) to save image or (d) to delete from databae or (q) to quit: ")
 
@@ -113,7 +96,12 @@ while True:
                         
                     else:
                         print(f"The file {picture_name} does not exist.")
-            
+
+    while ser.in_waiting > 0:
+        data = ser.readline()
+        data = str(data, 'utf-8')
+        data = data.strip('\r\n\0')
+        print(data)        
 
     # Resize the frame and add borders
     frame = cv2.resize(frame, (1000, 800))
